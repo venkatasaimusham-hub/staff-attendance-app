@@ -1,0 +1,77 @@
+// Prisma schema for Staff Attendance & Weekly Wages Manager
+// Maps to the Android Room Database tables specified in requirements.
+// SQLite is used for offline-first local storage.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Workers table — stores all staff information.
+/// Mirrors the Android Room `Workers` entity.
+model Worker {
+  id           String       @id @default(cuid())
+  workerId     String       @unique // Auto-generated business ID e.g. W001
+  name         String
+  phone        String
+  address      String       @default("")
+  role         String       @default("")
+  joiningDate  String       // ISO date string
+  dailyWage    Float        @default(0)
+  weeklyOff    String       @default("Sunday") // Day of week
+  status       String       @default("Active") // Active | Inactive
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  attendance Attendance[]
+  salaries   Salary[]
+}
+
+/// Attendance table — daily attendance records per worker.
+/// Mirrors the Android Room `Attendance` entity.
+model Attendance {
+  id            String   @id @default(cuid())
+  workerId      String
+  worker        Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  date          String   // ISO date string (yyyy-MM-dd)
+  status        String   // Present | Half Day | Absent | Leave
+  overtimeHours Float    @default(0)
+  remarks       String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@unique([workerId, date]) // one attendance record per worker per day
+}
+
+/// Salary table — weekly computed salary records per worker.
+/// Mirrors the Android Room `Salary` entity.
+model Salary {
+  id            String   @id @default(cuid())
+  workerId      String
+  worker        Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  weekStart     String   // ISO date string (yyyy-MM-dd)
+  weekEnd       String   // ISO date string (yyyy-MM-dd)
+  presentDays   Int      @default(0)
+  halfDays      Int      @default(0)
+  absentDays    Int      @default(0)
+  leaveDays     Int      @default(0)
+  overtimeHours Float    @default(0)
+  weeklySalary  Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  @@unique([workerId, weekStart, weekEnd])
+}
+
+/// App settings — singleton row (id = "default").
+/// Stores configurable values like overtime rate & leave pay policy.
+model Setting {
+  id           String   @id @default("default")
+  overtimeRate Float    @default(0) // amount per overtime hour
+  leavePaid    Boolean  @default(false) // whether Leave counts as paid
+  businessName String   @default("My Business")
+  currency     String   @default("₹")
+  theme        String   @default("light")
+}
