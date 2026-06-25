@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useAppStore, type ViewKey } from "@/lib/store";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -114,10 +114,10 @@ export function AppShell() {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">
-              {meta.title}
+              {t(meta.titleKey)}
             </h1>
             <p className="hidden truncate text-xs text-muted-foreground sm:block">
-              {meta.subtitle}
+              {t(meta.subtitleKey)}
             </p>
           </div>
           <LangSelector />
@@ -162,11 +162,13 @@ function SidebarContent({
   setView,
   settings,
   logout,
+  t,
 }: {
   view: ViewKey;
   setView: (v: ViewKey) => void;
   settings: { businessName: string } | null;
   logout: () => void;
+  t: (key: string) => string;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -209,7 +211,7 @@ function SidebarContent({
                     : "text-muted-foreground group-hover:text-sidebar-accent-foreground",
                 )}
               />
-              <span className="flex-1 truncate">{item.label}</span>
+              <span className="flex-1 truncate">{t(item.labelKey)}</span>
             </button>
           );
         })}
