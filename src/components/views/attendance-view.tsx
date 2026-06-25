@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarCheck,
@@ -17,12 +17,7 @@ import {
 import { api } from "@/lib/api-client";
 import type { Worker, Paginated, Attendance, AttendanceStatus } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
-import {
-  toISODate,
-  formatDate,
-  formatDateShort,
-  DAYS_OF_WEEK as _DW,
-} from "@/lib/date-utils";
+import { toISODate, formatDate, formatDateShort } from "@/lib/date-utils";
 import { ATTENDANCE_STATUSES, STATUS_STYLES, DAYS_OF_WEEK } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,8 +36,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-
-void _DW;
 
 interface RowState {
   status: AttendanceStatus;
@@ -77,8 +70,8 @@ export function AttendanceView() {
 function MarkAttendance() {
   const qc = useQueryClient();
   const [date, setDate] = useState(toISODate(new Date()));
-  const [rows, setRows] = useState<Record<string, RowState>>({});
-  const [dirty, setDirty] = useState(false);
+  // User edits on top of the seeded values from server data.
+  const [overrides, setOverrides] = useState<Record<string, RowState>>({});
 
   // Load all active workers (no pagination for marking).
   const { data: workersRes } = useQuery({
@@ -98,14 +91,14 @@ function MarkAttendance() {
     enabled: !!date,
   });
 
-  // Sync row state when workers or existing attendance load/change.
-  useEffect(() => {
-    if (!workers.length) return;
+  // Compute the seeded rows from workers + existing attendance + date.
+  // Pure derivation (no effect) — user overrides are merged on top.
+  const seedRows = useMemo<Record<string, RowState>>(() => {
     const map: Record<string, RowState> = {};
+    if (!workers.length) return map;
     const dayName = DAYS_OF_WEEK[new Date(date).getDay()];
     for (const w of workers) {
       const rec = existing?.items.find((a) => a.workerId === w.id);
-      // Default to "Leave" for weekly off day, else "Present".
       const isOff = w.weeklyOff === dayName;
       map[w.id] = {
         status: rec?.status || (isOff ? "Leave" : "Present"),
@@ -113,9 +106,22 @@ function MarkAttendance() {
         remarks: rec?.remarks || "",
       };
     }
-    setRows(map);
-    setDirty(false);
+    return map;
   }, [workers, existing, date]);
+
+  // Effective rows = seed merged with user overrides.
+  const rows = useMemo<Record<string, RowState>>(() => {
+    const merged: Record<string, RowState> = {};
+    for (const w of workers) {
+      merged[w.id] = {
+        ...(seedRows[w.id] || { status: "Present", overtime: "", remarks: "" }),
+        ...(overrides[w.id] || {}),
+      };
+    }
+    return merged;
+  }, [seedRows, overrides, workers]);
+
+  const dirty = Object.keys(overrides).length > 0;
 
   const bulkMut = useMutation({
     mutationFn: () => {
@@ -134,7 +140,7 @@ function MarkAttendance() {
       toast.success("Attendance saved.", {
         description: formatDate(date),
       });
-      setDirty(false);
+      setOverrides({});
       qc.invalidateQueries({ queryKey: ["attendance", date] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["worker"] });
@@ -143,8 +149,10 @@ function MarkAttendance() {
   });
 
   const setRow = (id: string, patch: Partial<RowState>) => {
-    setRows((r) => ({ ...r, [id]: { ...r[id], ...patch } }));
-    setDirty(true);
+    setOverrides((prev) => ({
+      ...prev,
+      [id]: { ...rows[id], ...patch },
+    }));
   };
 
   const markAll = (status: AttendanceStatus) => {
@@ -157,8 +165,7 @@ function MarkAttendance() {
         status: isOff ? "Leave" : status,
       };
     }
-    setRows(next);
-    setDirty(true);
+    setOverrides(next);
   };
 
   // Summary chips.

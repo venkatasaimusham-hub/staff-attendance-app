@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api-client";
@@ -57,27 +57,50 @@ const EMPTY: FormState = {
 };
 
 export function WorkerFormDialog({ open, onOpenChange, worker }: Props) {
-  const qc = useQueryClient();
-  const [form, setForm] = useState<FormState>(EMPTY);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  // Remount the inner form whenever the dialog opens or the target worker
+  // changes, so the form initialises from props directly (no effect).
+  const formKey = `${worker?.id ?? "new"}-${open}`;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{worker ? "Edit Worker" : "Add New Worker"}</DialogTitle>
+          <DialogDescription>
+            {worker
+              ? `Updating ${worker.name} (${worker.workerId})`
+              : "Fill in the worker's details. Worker ID is auto-generated."}
+          </DialogDescription>
+        </DialogHeader>
+        <WorkerForm key={formKey} worker={worker} onDone={() => onOpenChange(false)} />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-  useEffect(() => {
-    if (worker) {
-      setForm({
-        name: worker.name,
-        phone: worker.phone,
-        address: worker.address,
-        role: worker.role,
-        joiningDate: worker.joiningDate,
-        dailyWage: String(worker.dailyWage),
-        weeklyOff: worker.weeklyOff,
-        status: worker.status,
-      });
-    } else {
-      setForm(EMPTY);
-    }
-    setErrors({});
-  }, [worker, open]);
+function WorkerForm({
+  worker,
+  onDone,
+}: {
+  worker: Worker | null;
+  onDone: () => void;
+}) {
+  const qc = useQueryClient();
+  // Initialise state directly from the worker prop.
+  const [form, setForm] = useState<FormState>(
+    worker
+      ? {
+          name: worker.name,
+          phone: worker.phone,
+          address: worker.address,
+          role: worker.role,
+          joiningDate: worker.joiningDate,
+          dailyWage: String(worker.dailyWage),
+          weeklyOff: worker.weeklyOff,
+          status: worker.status,
+        }
+      : EMPTY,
+  );
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 
   const saveMut = useMutation({
     mutationFn: async () => {
@@ -100,11 +123,10 @@ export function WorkerFormDialog({ open, onOpenChange, worker }: Props) {
       toast.success(worker ? "Worker updated." : "Worker added.");
       qc.invalidateQueries({ queryKey: ["workers"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      onOpenChange(false);
+      onDone();
     },
     onError: (e: Error) => toast.error(e.message || "Failed to save worker."),
   });
-
   const validate = (): boolean => {
     const e: Partial<Record<keyof FormState, string>> = {};
     if (!form.name.trim()) e.name = "Name is required";
@@ -127,18 +149,7 @@ export function WorkerFormDialog({ open, onOpenChange, worker }: Props) {
     setForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{worker ? "Edit Worker" : "Add New Worker"}</DialogTitle>
-          <DialogDescription>
-            {worker
-              ? `Updating ${worker.name} (${worker.workerId})`
-              : "Fill in the worker's details. Worker ID is auto-generated."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Full Name" error={errors.name} required>
               <Input
@@ -219,7 +230,7 @@ export function WorkerFormDialog({ open, onOpenChange, worker }: Props) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => onDone()}
             >
               Cancel
             </Button>
@@ -231,8 +242,6 @@ export function WorkerFormDialog({ open, onOpenChange, worker }: Props) {
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
