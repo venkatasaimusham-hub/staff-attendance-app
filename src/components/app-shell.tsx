@@ -13,12 +13,9 @@ import {
   X,
 } from "lucide-react";
 import { useAppStore, type ViewKey } from "@/lib/store";
-import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NotificationBell } from "@/components/notification-bell";
-import { LangSelector } from "@/components/lang-selector";
 import { DashboardView } from "@/components/views/dashboard-view";
 import { WorkersView } from "@/components/views/workers-view";
 import { AttendanceView } from "@/components/views/attendance-view";
@@ -26,26 +23,37 @@ import { SalaryView } from "@/components/views/salary-view";
 import { ReportsView } from "@/components/views/reports-view";
 import { SettingsView } from "@/components/views/settings-view";
 
-const NAV_ITEMS: {
+interface NavItem {
   key: ViewKey;
-  labelKey: string;
+  label: string;
   icon: typeof LayoutDashboard;
-}[] = [
-  { key: "dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { key: "workers", labelKey: "nav.workers", icon: Users },
-  { key: "attendance", labelKey: "nav.attendance", icon: CalendarCheck },
-  { key: "salary", labelKey: "nav.salary", icon: Calculator },
-  { key: "reports", labelKey: "nav.reports", icon: FileBarChart },
-  { key: "settings", labelKey: "nav.settings", icon: SettingsIcon },
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "workers", label: "Workers", icon: Users },
+  { key: "attendance", label: "Attendance", icon: CalendarCheck },
+  { key: "salary", label: "Salary Calculator", icon: Calculator },
+  { key: "reports", label: "Reports", icon: FileBarChart },
+  { key: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
-const VIEW_META: Record<ViewKey, { titleKey: string; subtitleKey: string }> = {
-  dashboard: { titleKey: "nav.dashboard", subtitleKey: "dash.subtitle" },
-  workers: { titleKey: "nav.workers", subtitleKey: "workers.subtitle" },
-  attendance: { titleKey: "nav.attendance", subtitleKey: "att.subtitle" },
-  salary: { titleKey: "nav.salary", subtitleKey: "salary.subtitle" },
-  reports: { titleKey: "nav.reports", subtitleKey: "reports.subtitle" },
-  settings: { titleKey: "nav.settings", subtitleKey: "settings.subtitle" },
+const VIEW_META: Record<ViewKey, { title: string; subtitle: string }> = {
+  dashboard: { title: "Dashboard", subtitle: "Workforce overview for today" },
+  workers: { title: "Workers", subtitle: "Add, edit and manage your staff" },
+  attendance: {
+    title: "Attendance",
+    subtitle: "Mark daily attendance & view history",
+  },
+  salary: {
+    title: "Salary Calculator",
+    subtitle: "Compute weekly wages automatically",
+  },
+  reports: { title: "Reports", subtitle: "Generate, export & print reports" },
+  settings: {
+    title: "Settings",
+    subtitle: "Configure rates, backup & theme",
+  },
 };
 
 export function AppShell() {
@@ -55,7 +63,6 @@ export function AppShell() {
   const settings = useAppStore((s) => s.settings);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
-  const { t } = useI18n();
 
   const meta = VIEW_META[view];
 
@@ -114,14 +121,12 @@ export function AppShell() {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">
-              {t(meta.titleKey)}
+              {meta.title}
             </h1>
             <p className="hidden truncate text-xs text-muted-foreground sm:block">
-              {t(meta.subtitleKey)}
+              {meta.subtitle}
             </p>
           </div>
-          <LangSelector />
-          <NotificationBell />
           <ThemeToggle />
           <Button
             variant="outline"
@@ -157,19 +162,14 @@ export function AppShell() {
   );
 }
 
-function SidebarContent({
-  view,
-  setView,
-  settings,
-  logout,
-  t,
-}: {
+interface SidebarContentProps {
   view: ViewKey;
   setView: (v: ViewKey) => void;
   settings: { businessName: string } | null;
   logout: () => void;
-  t: (key: string) => string;
-}) {
+}
+
+function SidebarContent({ view, setView, settings, logout }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Brand */}
@@ -211,7 +211,7 @@ function SidebarContent({
                     : "text-muted-foreground group-hover:text-sidebar-accent-foreground",
                 )}
               />
-              <span className="flex-1 truncate">{t(item.labelKey)}</span>
+              <span className="flex-1 truncate">{item.label}</span>
             </button>
           );
         })}
