@@ -17,6 +17,8 @@ import { useAppStore, type ViewKey } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/notification-bell";
+import { LangSelector } from "@/components/lang-selector";
 import { DashboardView } from "@/components/views/dashboard-view";
 import { WorkersView } from "@/components/views/workers-view";
 import { AttendanceView } from "@/components/views/attendance-view";
@@ -26,25 +28,24 @@ import { SettingsView } from "@/components/views/settings-view";
 
 const NAV_ITEMS: {
   key: ViewKey;
-  label: string;
+  labelKey: string;
   icon: typeof LayoutDashboard;
-  desc: string;
 }[] = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, desc: "Overview & stats" },
-  { key: "workers", label: "Workers", icon: Users, desc: "Manage staff" },
-  { key: "attendance", label: "Attendance", icon: CalendarCheck, desc: "Daily marking" },
-  { key: "salary", label: "Salary Calculator", icon: Calculator, desc: "Weekly wages" },
-  { key: "reports", label: "Reports", icon: FileBarChart, desc: "Export & print" },
-  { key: "settings", label: "Settings", icon: SettingsIcon, desc: "Config & backup" },
+  { key: "dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { key: "workers", labelKey: "nav.workers", icon: Users },
+  { key: "attendance", labelKey: "nav.attendance", icon: CalendarCheck },
+  { key: "salary", labelKey: "nav.salary", icon: Calculator },
+  { key: "reports", labelKey: "nav.reports", icon: FileBarChart },
+  { key: "settings", labelKey: "nav.settings", icon: SettingsIcon },
 ];
 
-const VIEW_TITLES: Record<ViewKey, { title: string; subtitle: string }> = {
-  dashboard: { title: "Dashboard", subtitle: "Workforce overview for today" },
-  workers: { title: "Workers", subtitle: "Add, edit and manage your staff" },
-  attendance: { title: "Attendance", subtitle: "Mark daily attendance & view history" },
-  salary: { title: "Salary Calculator", subtitle: "Compute weekly wages automatically" },
-  reports: { title: "Reports", subtitle: "Generate, export & print reports" },
-  settings: { title: "Settings", subtitle: "Configure rates, backup & theme" },
+const VIEW_META: Record<ViewKey, { titleKey: string; subtitleKey: string }> = {
+  dashboard: { titleKey: "nav.dashboard", subtitleKey: "dash.subtitle" },
+  workers: { titleKey: "nav.workers", subtitleKey: "workers.subtitle" },
+  attendance: { titleKey: "nav.attendance", subtitleKey: "att.subtitle" },
+  salary: { titleKey: "nav.salary", subtitleKey: "salary.subtitle" },
+  reports: { titleKey: "nav.reports", subtitleKey: "reports.subtitle" },
+  settings: { titleKey: "nav.settings", subtitleKey: "settings.subtitle" },
 };
 
 export function AppShell() {
@@ -54,10 +55,9 @@ export function AppShell() {
   const settings = useAppStore((s) => s.settings);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
+  const { t } = useI18n();
 
-  // Close mobile sidebar on view change handled in store.
-
-  const meta = VIEW_TITLES[view];
+  const meta = VIEW_META[view];
 
   return (
     <div className="flex min-h-screen w-full bg-muted/30">
@@ -120,6 +120,8 @@ export function AppShell() {
               {meta.subtitle}
             </p>
           </div>
+          <LangSelector />
+          <NotificationBell />
           <ThemeToggle />
           <Button
             variant="outline"
