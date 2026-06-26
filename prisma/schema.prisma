@@ -7,10 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 /// Workers table — stores all staff information.
 /// Mirrors the Android Room `Workers` entity.
 model Worker {
