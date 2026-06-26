@@ -82,12 +82,12 @@ export function LoginScreen() {
             </Button>
           </form>
 
-          <div className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-3 text-xs text-emerald-700 dark:text-emerald-300">
-            <ShieldCheck className="h-4 w-4 shrink-0" />
-            <span>
-              Demo password: <code className="font-mono font-semibold">admin123</code>
-            </span>
-          </div>
+         <div className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+  <ShieldCheck className="h-4 w-4 shrink-0" />
+  <span>
+    Secure admin login only
+  </span>
+</div>
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Workers don&apos;t need to log in — admin manages everything.
