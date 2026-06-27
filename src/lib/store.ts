@@ -30,7 +30,7 @@ interface AppState {
 }
 
 // Default admin password — for a local/offline small-business tool.
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "bhargavi123";
 
 export const useAppStore = create<AppState>((set, get) => ({
   view: "dashboard",
